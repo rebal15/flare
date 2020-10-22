@@ -248,10 +248,11 @@ if (!$user->isLoggedIn()) {
                                                 $aircraftlist = $user->getAvailableAircraft();
 
                                                 foreach($aircraftlist as $aircraft) {
+                                                    $notes = $aircraft['notes'] == null ? '' : ' - '.$aircraft['notes'];
                                                     if ($aircraft["name"] == Input::get("aircraft")) {
-                                                        echo '<option value="'.$aircraft['id'].'" selected>'.$aircraft['name'].'</option>';
+                                                        echo '<option value="'.$aircraft['id'].'" selected>'.$aircraft['name'].' ('.$aircraft['liveryname'].')'.$notes.'</option>';
                                                     } else {
-                                                        echo '<option value="'.$aircraft['id'].'">'.$aircraft['name'].'</option>';
+                                                        echo '<option value="'.$aircraft['id'].'">'.$aircraft['name'].' ('.$aircraft['liveryname'].')'.$notes.'</option>';
                                                     }
                                                 }
                                                 ?>
@@ -270,7 +271,7 @@ if (!$user->isLoggedIn()) {
                             <?php
                                 $server = 'casual';
                                 $force = Config::get('FORCE_SERVER');
-                                if ($force !== 0 && $force !== 'casual') $server = $force;
+                                if ($force != 0 && $force != 'casual') $server = $force;
                             ?>
                             <p>Before you can start filing PIREPs, we need to grab a bit of data from Infinite Flight. Please spawn in on the <?= ucfirst($server); ?> Server, and ensure that you <b>set your callsign to your assigned one (<?= $user->data()->callsign ?>, if you've forgotten!).</b> Then, click the button below.</p>
                             <form method="post" action="update.php">

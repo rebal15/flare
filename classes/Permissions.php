@@ -44,10 +44,13 @@ class Permissions
     {
         self::init();
 
-        $ret = self::$_db->insert('permissions', array(
+        $fields = array(
             'userid' => $userid,
             'name' => $perm
-        ));
+        );
+        $ret = self::$_db->insert('permissions', $fields);
+
+        Events::trigger('permission/given', $fields);
 
         return !($ret->error());
     }
@@ -62,6 +65,7 @@ class Permissions
         self::init();
 
         $ret = self::$_db->query("DELETE FROM permissions WHERE userid=? AND name=?", array($userid, $perm));
+        Events::trigger('permission/revoked', ["userid" => $userid, "name" => $perm]);
 
         return !($ret->error());
     }
@@ -81,6 +85,37 @@ class Permissions
         }
 
         return $permissions;
+    }
+
+    /**
+     * @return null
+     * @param int $userid User ID
+     */
+    public static function giveAll($userid)
+    {
+        foreach (self::$_permissions as $key => $val) {
+            $ret = self::give($userid, $key);
+            if (!$ret) {
+                throw new Exception("Could not Give Permission {$val} ({$key})");
+            }
+        }
+
+        $res = self::give($userid, 'admin');
+        if (!res) {
+            throw new Exception("Could not Give Permission Admin (admin)");
+        }
+    }
+
+    /**
+     * @return array
+     * @param string $perm Permission Key
+     */
+    public static function usersWith($perm)
+    {
+        self::init();
+
+        $sql = "SELECT u.* FROM pilots u WHERE u.id IN (SELECT p.userid FROM permissions p WHERE name=?)";
+        return self::$_db->query($sql, [$perm])->results();
     }
 
 }

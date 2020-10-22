@@ -54,6 +54,8 @@ class User
             throw new Exception('There was a problem creating an account.');
         }
 
+        Events::trigger('user/created', $fields);
+
     }
 
     /**
@@ -114,7 +116,7 @@ class User
                         Cookie::create($this->_cookieName, $hash, Config::get('remember/cookie_expiry'));
 
                     }
-
+                    Events::trigger('user/logged-in', (array)$this->data());
                     return true;
                 }
             }
@@ -162,6 +164,7 @@ class User
 
         Session::delete($this->_sessionName);
         Cookie::delete($this->_cookieName);
+        Events::trigger('user/logged-out', (array)$this->data());
 
     }
 
@@ -180,6 +183,9 @@ class User
         if (!$this->_db->update('pilots', $id, 'id', $fields)) {
             throw new Exception('There was a problem updating the user.');
         }
+
+        $fields["id"] = $id;
+        Events::trigger('user/updated', $fields);
 
     }
 
@@ -235,6 +241,27 @@ class User
     }
 
     /**
+     * @return object
+     * @param int $id User ID
+     */
+    public function nextrank($id = null) {
+        if (!$id && $this->isLoggedIn()) {
+            $id = $this->data()->id;
+        }
+
+        $current = $this->rank($id, true);
+        $ranks = Rank::fetchAllNames()->results();
+        $currentFound = false;
+        foreach ($ranks as $r) {
+            if ($r->id == $current && !$currentFound) {
+                $currentFound = true;
+            } elseif ($currentFound) {
+                return $r;
+            }
+        }
+    }
+
+    /**
      * @return array
      * @param int $id User ID
      */
@@ -245,15 +272,15 @@ class User
             $id = $this->data()->id;
         }
 
-        $result = Aircraft::getAvailableAircraft($this->rank($id, true));
-
+        $result = Aircraft::getAvailableAircraft($this->rank($id, true))->results();
         $aircraft = array();
-        $x = 0;
 
-        while ($x < $result->count()) {
+        foreach ($result as $r) {
             $newdata = array(
-                'name' => $result->results()[$x]->name,
-                'id' => $result->results()[$x]->id,
+                'name' => $r->name,
+                'liveryname' => $r->liveryname,
+                'id' => $r->id,
+                'notes' => $r->notes
             );
             $aircraft[$x] = $newdata;
             $x++;
@@ -431,26 +458,25 @@ class User
 
         $db = DB::newInstance();
 
-        $results = $db->getAll('pilots');
+        $results = $db->getAll('pilots')->results();
 
         $usersarray = array();
         $statuses = array('Pending', 'Active', 'Inactive');
         $x = 0;
-
-        while ($x < $results->count()) {
+        $admins = Permissions::usersWith('admin');
+        foreach ($results as $r) {
             $newdata = array(
-                'id' => $results->results()[$x]->id,
-                'callsign' => $results->results()[$x]->callsign,
-                'name' => $results->results()[$x]->name,
-                'email' => $results->results()[$x]->email,
-                'ifc' => $results->results()[$x]->ifc,
-                'rank' => $this->rank($results->results()[$x]->id),
-                'status' => $statuses[$results->results()[$x]->status],
-                'joined' => $results->results()[$x]->joined,
-                'permissions' => $results->results()[$x]->permissions,
-                'transhours' => $results->results()[$x]->transhours,
-                'transflights' => $results->results()[$x]->transflights,
-                'isAdmin' => Json::decode($results->results()[$x]->permissions)["admin"],
+                'id' => $r->id,
+                'callsign' => $r->callsign,
+                'name' => $r->name,
+                'email' => $r->email,
+                'ifc' => $r->ifc,
+                'rank' => $this->rank($r->id),
+                'status' => $statuses[$r->status],
+                'joined' => $r->joined,
+                'transhours' => $r->transhours,
+                'transflights' => $r->transflights,
+                'isAdmin' => in_array($r, $admins) ? 1 : 0,
             );
             $usersarray[$x] = $newdata;
             $x++;
@@ -465,34 +491,14 @@ class User
      */
     public function getAllStaff()
     {
-
-        $users = $this->getAllUsers();
-        $staff = array();
-        $x = 0;
-
-        foreach ($users as $user) {
-            $permissions = Json::decode($user['permissions']);
-            
-            if (array_key_exists('admin', $permissions)) {
-                if ($permissions['admin'] == 1) {
-                    $newdata = array(
-                        'id' => $user['id'],
-                        'callsign' => $user['callsign'],
-                        'name' => $user['name'],
-                        'email' => $user['email'],
-                        'ifc' => $user['ifc'],
-                        'rank' => $user['rank'],
-                        'status' => $user['status'],
-                        'joined' => $user['joined'],
-                        'permissions' => $permissions
-                    );
-                    $staff[$x] = $newdata;
-                }
-            }
-            $x++;
+        $sql = "SELECT u.* FROM pilots u WHERE u.id IN (SELECT p.userid FROM permissions p WHERE p.name='admin') AND u.status=1";
+        $res = $this->_db->query($sql)->results();
+        $ret = [];
+        foreach ($res as $staff) {
+            array_push($ret, (array)$staff);
         }
-        return $staff;
 
+        return $ret;
     }
 
     /**

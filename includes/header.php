@@ -11,7 +11,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
-<link rel="stylesheet" type='text/css' href="assets/custom.php">
+<link rel="stylesheet" type='text/css' href="/assets/custom.php">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="https://cdn.ckeditor.com/ckeditor5/17.0.0/classic/ckeditor.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
@@ -20,13 +20,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.21/datatables.min.js"></script>
 <script>
   $(document).ready(function() {
+    $('[data-toggle="tooltip"]').tooltip(); 
+    $(".tooltip-toggle").tooltip();
+
     $("nav .panel-link").addClass("nav-link");
+
     $(".datatable").dataTable({
       "paging": true,
       "ordering": true,
       "info": true,
       "pageLength": 10
     });
+    
     $(".datatable-nosearch").dataTable({
       "paging": true,
       "ordering": true,

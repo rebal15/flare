@@ -79,10 +79,13 @@ class Rank
 
         self::init();
 
-        self::$_db->insert('ranks', array(
+        $data = array(
             'name' => $name,
             'timereq' => $timereq
-        ));
+        );
+        self::$_db->insert('ranks', $data);
+
+        Events::trigger('rank/added', $data);
 
     }
 
@@ -98,6 +101,9 @@ class Rank
         if (!self::$_db->update('ranks', $id, 'id', $fields)) {
             throw new Exception('There was a problem updating the user.');
         }
+
+        $fields["id"] = $id;
+        Events::trigger('rank/updated'. $fields);
     }
 
     /**
@@ -109,6 +115,9 @@ class Rank
         self::init();
 
         $ret = self::$_db->delete('ranks', array('id', '=', $id));
+
+        Events::trigger('rank/deleted', ['id' => $id]);
+
         return !($ret->error());
     }
 
@@ -157,7 +166,7 @@ class Rank
     {
 
         self::init();
-        return self::$_db->getAll('ranks');
+        return self::$_db->getAll('ranks', ['1', '=', '1'], array('timereq', 'ASC'));
 
     }
 

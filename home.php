@@ -59,7 +59,7 @@ if (!$user->isLoggedIn()) {
                     }
                     ?>
                     <!-- profile -->
-                    <section id="profile">
+                    <section id="profile" class="mb-2">
                         <h3>Your Profile</h3>
                         <?php
                         if (Session::exists('error')) {
@@ -136,7 +136,7 @@ if (!$user->isLoggedIn()) {
                         </div>
                     </section>
                     <!-- stats table -->
-                    <section id="stats">
+                    <section id="stats" class="mb-2">
                         <table class="table mb-0 border-bottom">
                             <tr>
                                 <td class="align-middle"><b>Name</b></td>
@@ -159,19 +159,25 @@ if (!$user->isLoggedIn()) {
                             </tr>
                             <tr>
                                 <td class="align-middle"><b>Rank</b></td>
-                                <td class="align-middle"><?= escape($user->rank()) ?></td>
+                                <?php 
+                                    $next = $user->nextrank(); 
+                                    $tip = "The Top Rank!";
+                                    if ($next != null) {
+                                        $hrs = $next->timereq / 3600;
+                                        $tip = "Next Rank: {$next->name} ({$hrs}hrs)";
+                                    }
+                                ?>
+                                <td class="align-middle" data-toggle="tooltip" title="<?= $tip ?>"><?= escape($user->rank()) ?></td>
                             </tr>
                             <tr>
                                 <td class="align-middle"><b>PIREPs</b></td>
                                 <td class="align-middle"><?= escape($user->numPirepsFiled()) ?></td>
                             </tr>
                         </table>
-                        <br />
                     </section>  
                     <!-- news -->
-                    <section id="news">
+                    <section id="news" class="mb-3">
                         <h3>News Feed</h3>
-                        <br>
                         <?php
                         $news = News::get();
 
@@ -188,13 +194,10 @@ if (!$user->isLoggedIn()) {
                             }
                         }
                         ?>
-                        <br>
-                        <br>
                     </section>
                     <!-- pireps -->
-                    <section id="pireps">
+                    <section id="pireps" class="mb-3">
                         <h3>Your Recent PIREPs</h3>
-                        <br>
                         <?php $pireps = $user->recentPireps(); ?>
                         <?php if ($pireps): ?>
                             <table class="table table-striped">
@@ -230,6 +233,31 @@ if (!$user->isLoggedIn()) {
                             <?= 'No Recent PIREPs' ?>
                         <?php endif; ?>
                     </section>  
+                    <?php if ($IS_GOLD): ?>
+                        <!-- events -->
+                        <section id="events" class="mb-3">
+                            <h3>Upcoming Events</h3>
+                            <table class="table table-striped text-center">
+                                <thead class="bg-custom">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Airport</th>
+                                        <th>View</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="events-table">
+                                    <tr><td colspan="3">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                            <script>
+                                $.post("vanet.php", {
+                                    "method": "events-table"
+                                }, function (data, status) {
+                                    $("#events-table").html(data);
+                                });
+                            </script>
+                        </section>
+                    <?php endif; ?>
                 </div>  
             </div>
         </div>
